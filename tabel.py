@@ -152,7 +152,6 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
     wb.save(f'{monprint}.Табель_{user}.xlsx')  # Сохраняем книгу
 
 
-
 if __name__ == '__main__':
     # make_tabel_func('Ivan')
     print(count_hour(1,2020))
