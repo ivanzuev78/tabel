@@ -1,5 +1,5 @@
 import openpyxl as opx
-from random import randint
+from random import randint as r
 import datetime
 from openpyxl.styles.borders import Border, Side
 from openpyxl.styles import Font
@@ -19,12 +19,73 @@ def count_hour(mon,year):
 
 
 def workday(d, m, y, holiday):
-    if d in holiday:
-        return False
-    return True if datetime.datetime(y, m, d).isoweekday() < 6 else False
+    while True:
+        try:
+            if d in holiday:
+                return False
+            yield True if datetime.datetime(y, m, d).isoweekday() < 6 else False
+        except:
+            break
+
+
+def fill_tabel(all_time, workdaygen):
+    all_stroki = []
+    for ind, val in enumerate(all_time):
+        all_time[ind] = int(val)
+    while True:
+        if sum(all_time) == 0:
+            print('good exit')
+            break
+        try:
+            if next(workdaygen):
+                curent_day = []
+                for ind, top in enumerate(all_time):
+                    if top:
+                        if ind == len(all_time) - 1:
+                            hour = 8 - sum(curent_day)
+                            curent_day.append(hour)
+                            all_time[ind] -= hour
+
+                        # elif ind == 0:
+                        #     if top >= 8 and sum(all_time[ind + 1:]) >= 8:
+                        #         hour = r(1, 8)
+                        #         all_time[ind] -= hour
+                        #         curent_day.append(hour)
+                        #     elif top >= 8 and sum(all_time[ind + 1:]) < 8:
+                        #         hour = 8 - sum(all_time[ind + 1:])
+                        #         all_time[ind] -= hour
+                        #         curent_day.append(hour)
+                        #     elif 0 <= top < 8:
+                        #         curent_day.append(top)
+                        #         all_time[ind] -= top
+                        elif sum(curent_day) < 8:
+                            if sum(all_time[ind+1:]) >= 8 or (sum(curent_day) + sum(all_time[ind+1:]) >= 8):
+                                hour = 8 - r(1, 8 - sum(curent_day))
+                                all_time[ind] -= hour
+                                curent_day.append(hour)
+                            elif sum(all_time[ind+1:]) < 8:
+                                hour = 8 - sum(curent_day) - sum(all_time[ind+1:])
+                                all_time[ind] -= hour
+                                curent_day.append(hour)
+                    else:
+                        curent_day.append(0)
+                all_stroki.append(curent_day)
+        except:
+            print('exception')
+            break
+    return all_stroki
+
+
+
+
+
+
+
+    return all_stroki
 
 
 def make_tabel_func(user, month, year, topic, topic_val, holiday):
+
     topdict = {}  # Словарь (тема: кол-во часов)
     wb = opx.Workbook()  # Создаём рабочую книгу
     ws = wb.active  # Запоминаем активный лист
@@ -39,7 +100,7 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
                            right=Side(style=None),
                            top=Side(style=None),
                            bottom=Side(style=None))
-
+    #  Размер шрифта 13
     ft = Font(name='Times New Roman',
               size=13,
               bold=False,
@@ -80,49 +141,60 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
     ws['A4'].value = 'Дата'
 
     # Заполняем таблицу
-    day = 1
-    nulbefore = 0
-    while True:
-        try:
-            if workday(day, month, year, holiday):
-                row_to_add = [day]
-                if nulbefore:
-                    row_to_add += [0 for _ in range(nulbefore)]
-                for i in range(topcount):
-                    if topdict[ws[f'{chr(66 + i)}4'].value] > 8:
-                        row_to_add.append(8)
-                        topdict[ws[f'{chr(66 + i)}4'].value] -= 8
-                        for _ in range(i,topcount - 1):
-                            row_to_add.append(0)
-                        break
-                    elif topdict[ws[f'{chr(66 + i)}4'].value] > 0:
-                        row_to_add.append(topdict[ws[f'{chr(66 + i)}4'].value])
-                        row_to_add.append(8-topdict[ws[f'{chr(66 + i)}4'].value])
-                        topdict[ws[f'{chr(67 + i)}4'].value] -= topdict[ws[f'{chr(66 + i)}4'].value]
-                        topdict[ws[f'{chr(66 + i)}4'].value] = 0
-                        nulbefore += 1
-                        for _ in range(i,topcount - 2):
-                            row_to_add.append(0)
-                        break
+    # day = 1
+    # nulbefore = 0
+    # while True:
+    #     try:
+    #         if workday(day, month, year, holiday):
+    #             row_to_add = [day]
+    #             if nulbefore:
+    #                 row_to_add += [0 for _ in range(nulbefore)]
+    #             for i in range(topcount):
+    #                 if topdict[ws[f'{chr(66 + i)}4'].value] > 8:
+    #                     row_to_add.append(8)
+    #                     topdict[ws[f'{chr(66 + i)}4'].value] -= 8
+    #                     for _ in range(i,topcount - 1):
+    #                         row_to_add.append(0)
+    #                     break
+    #                 elif topdict[ws[f'{chr(66 + i)}4'].value] > 0:
+    #                     row_to_add.append(topdict[ws[f'{chr(66 + i)}4'].value])
+    #                     row_to_add.append(8-topdict[ws[f'{chr(66 + i)}4'].value])
+    #                     topdict[ws[f'{chr(67 + i)}4'].value] -= topdict[ws[f'{chr(66 + i)}4'].value]
+    #                     topdict[ws[f'{chr(66 + i)}4'].value] = 0
+    #                     nulbefore += 1
+    #                     for _ in range(i,topcount - 2):
+    #                         row_to_add.append(0)
+    #                     break
+    #
+    #             row_to_add.append(8)
+    #         else:
+    #             row_to_add = [day] + ['-' for _ in range(topcount + 1)]
+    #         ws.append(row_to_add)
+    #         day += 1
+    #     except:
+    #         break
+    #
+    # row_to_add = ['Итого']
+    # for k in range(topcount + 1):
+    #     sum_top = 0
+    #     for i in range(5, 5 + day):
+    #         try:
+    #             sum_top += int(ws[f'{chr(66 + k)}{i}'].value)
+    #         except:
+    #             pass
+    #     row_to_add.append(sum_top)
+    # ws.append(row_to_add)
+    # старый вариант
 
-                row_to_add.append(8)
-            else:
-                row_to_add = [day] + ['-' for _ in range(topcount + 1)]
-            ws.append(row_to_add)
-            day += 1
-        except:
-            break
-
-    row_to_add = ['Итого']
-    for k in range(topcount + 1):
-        sum_top = 0
-        for i in range(5, 5 + day):
-            try:
-                sum_top += int(ws[f'{chr(66 + k)}{i}'].value)
-            except:
-                pass
-        row_to_add.append(sum_top)
-    ws.append(row_to_add)
+    # Создаём генератор для дней
+    w_day = workday(1, month, year, holiday)
+    all_day = []
+    for i in topic_val:
+        if i:
+            all_day.append(i)
+    tabel = fill_tabel(all_day, w_day)
+    for i in tabel:
+        ws.append(i)
 
 
 
@@ -154,4 +226,13 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
 
 if __name__ == '__main__':
     # make_tabel_func('Ivan')
-    print(count_hour(1,2020))
+    # print(count_hour(1,2020))
+    sum_ = [0, 0, 0, 0, 0]
+    for i in fill_tabel(1, 2020, ['q','w','e', 'a'], [50, 50, 34, ]):
+        try:
+            for ind, k in enumerate(i):
+                sum_[ind] += k
+        except:
+            pass
+        print(i)
+    print(sum_)
