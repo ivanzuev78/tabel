@@ -5,12 +5,13 @@ from openpyxl.styles.borders import Border, Side
 from openpyxl.styles import Font
 
 
-def count_hour(mon,year):
+def count_hour(mon,year, rest= [], holiday= []):
     day = 1
     count_time = 0
+    a = workday(day, mon, year, holiday, rest)
     while True:
         try:
-            if datetime.datetime(year, mon, day).isoweekday() < 6:
+            if next(a):
                 count_time += 8
             day += 1
         except:
@@ -18,11 +19,11 @@ def count_hour(mon,year):
     return count_time
 
 
-def workday(d, m, y, holiday):
+def workday(d, m, y, holiday= [], rest= []):
 
     while True:
         try:
-            if d in holiday:
+            if d in holiday or d in [ i for i in range(rest[0], rest[1] + 1)]:
                 yield False
             else:
                 yield True if datetime.datetime(y, m, d).isoweekday() < 6 else False
@@ -36,9 +37,6 @@ def fill_tabel(all_time, workdaygen):
     for ind, val in enumerate(all_time):
         all_time[ind] = int(val)
     while True:
-        if sum(all_time) == 0:
-            print('good exit')
-            break
         try:
             curent_day = []
             if next(workdaygen):
@@ -52,6 +50,8 @@ def fill_tabel(all_time, workdaygen):
                             if sum(all_time[ind+1:]) > 8 or (sum(curent_day) + sum(all_time[ind+1:]) > 8):
                                 if top > 8:
                                     hour =r(1, 8 - sum(curent_day))
+                                elif top > 8 - sum(curent_day):
+                                    hour = 8 - sum(curent_day)
                                 else:
                                     hour = top
                                 all_time[ind] -= hour
@@ -73,9 +73,8 @@ def fill_tabel(all_time, workdaygen):
     return all_stroki
 
 
-def make_tabel_func(user, month, year, topic, topic_val, holiday):
+def make_tabel_func(user, month, year, topic, topic_val, holiday, rest):
 
-    topdict = {}  # Словарь (тема: кол-во часов)
     wb = opx.Workbook()  # Создаём рабочую книгу
     ws = wb.active  # Запоминаем активный лист
 
@@ -113,7 +112,6 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
     for i, top in enumerate(topic):
         if top:
             ws[f'{chr(66+topcount)}4'].value = top
-            topdict[top] = int(topic_val[i])
             topcount += 1
 
 
@@ -121,35 +119,41 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
     ws.merge_cells(f'A1:{chr(66+topcount)}1')  # Объединяем ячейки для названия
     ws.merge_cells(f'A2:{chr(66+topcount)}2')  # Объединяем ячейки для названия
     ws.merge_cells(f'B3:{chr(66 + topcount - 1)}3')  # Объединяем ячейки для номера инвентарнго объекта
+    ws.merge_cells(f'A3:A4')
+    ws.merge_cells(f'{chr(66+topcount)}3:{chr(66+topcount)}4')
 
     ws['A1'].value = f'Табель учета затрат времени сотрудника ОВНТ {user}'  # Добавляет в выбраную ячейку указанное значение
     ws['A2'].value = f'на «{month_list[month]}» {year} года по инвентарным объектам'
     ws['B3'].value = 'Номер инвентарного объекта'
 
-    ws[f'{chr(66+topcount)}4'].value = 'Сумма'
-    ws['A4'].value = 'Дата'
+    ws[f'{chr(66+topcount)}3'].value = 'Сумма'
+    ws['A3'].value = 'Дата'
 
-
-    w_day = workday(1, month, year, holiday)
+    w_day = workday(1, month, year, holiday, rest)
     all_day = []
 
-    for i in topic_val:
+    for i, k in zip(topic, topic_val):
         if i:
-            all_day.append(i)
-    sum_total = [0 for _ in range(len(all_day))]
+            all_day.append(k)
+    sum_total = [0 for _ in range(len(all_day) + 1)]
     tabel = fill_tabel(all_day, w_day)
 
     for ind, i in enumerate(tabel):
         day = [ind + 1]
         if type(i[0]) == int:
-            for index, k in enumerate(i):
-                sum_total[index] += k
-            sums = [sum(i)]
-            ws.append(day + i + sums)
+            qqq = [f'=SUM(B{day[0] + 4}:{chr(65 + topcount)}{day[0] + 4})']
+            ws.append(day + i + qqq)
         else:
             ws.append(day + i + [' - '])
-    ws.append(['Итого'] + sum_total + [sum(sum_total)])
+    for i in range(len(all_day) + 1):
+        sum_total[i] = f'=SUM({chr(66 + i)}5:{chr(66 + i)}{len(tabel) + 4})'
 
+
+    ws.append(['Итого'] + sum_total )
+
+    if sum(rest):
+        ws.merge_cells(f'B{rest[0] + 4}:{chr(66 + topcount)}{rest[1] + 4}')
+        ws[f'B{rest[0] + 4}'].value = 'ОТПУСК'
 
     for row in ws:  # Проходим по всем строкам на листе
         for cell in row:  # Проходим по всем ячейкам в строке
@@ -170,11 +174,12 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday):
             ws.column_dimensions[f'{chr(col)}'].width = 20 - 2 * topcount
 
     ws.merge_cells(f'A41:{chr(66 + topcount)}41')
-    ws['A41'].value = 'Начальник ОВНТ                                                                Керестень А.А.'
+    ws['A41'].value = 'Начальник ОВНТ' + 20*' ' + 10*' '*topcount + 'Керестень А.А.'
     ws['A41'].font = ft
     ws['A41'].alignment = opx.styles.Alignment(horizontal='center')
 
-    wb.save(f'{monprint}.Табель_{user}.xlsx')  # Сохраняем книгу
+
+    wb.save(f'Табель_{user}_{month_list[month]}.{year}.xlsx')  # Сохраняем книгу
 
 
 if __name__ == '__main__':
