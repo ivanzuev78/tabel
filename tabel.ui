@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1133</width>
-    <height>629</height>
+    <width>1366</width>
+    <height>705</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>700</width>
-    <height>520</height>
+    <width>975</width>
+    <height>555</height>
    </size>
   </property>
   <property name="baseSize">
@@ -345,7 +345,7 @@ p, li { white-space: pre-wrap; }
      </font>
     </property>
     <property name="text">
-     <string>Количество часов</string>
+     <string>% времени на тему</string>
     </property>
    </widget>
    <widget class="QTextEdit" name="top_3_val">
@@ -614,22 +614,24 @@ p, li { white-space: pre-wrap; }
    <widget class="QLabel" name="must_time">
     <property name="geometry">
      <rect>
-      <x>250</x>
+      <x>46</x>
       <y>440</y>
-      <width>47</width>
+      <width>291</width>
       <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>15</pointsize>
+      <pointsize>14</pointsize>
+      <italic>false</italic>
+      <underline>false</underline>
      </font>
     </property>
     <property name="text">
-     <string>0</string>
+     <string>Всего ___ рабочих часов</string>
     </property>
     <property name="textFormat">
-     <enum>Qt::AutoText</enum>
+     <enum>Qt::PlainText</enum>
     </property>
    </widget>
    <widget class="QLabel" name="sum_time">
@@ -637,7 +639,7 @@ p, li { white-space: pre-wrap; }
      <rect>
       <x>250</x>
       <y>400</y>
-      <width>47</width>
+      <width>161</width>
       <height>31</height>
      </rect>
     </property>
@@ -656,7 +658,7 @@ p, li { white-space: pre-wrap; }
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>140</x>
       <y>410</y>
       <width>91</width>
       <height>21</height>
@@ -668,25 +670,7 @@ p, li { white-space: pre-wrap; }
      </font>
     </property>
     <property name="text">
-     <string>ИТОГО</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_7">
-    <property name="geometry">
-     <rect>
-      <x>110</x>
-      <y>450</y>
-      <width>131</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>Должно быть</string>
+     <string>ИТОГО, %</string>
     </property>
    </widget>
    <widget class="QPushButton" name="make_tabel">
@@ -1205,6 +1189,37 @@ p, li { white-space: pre-wrap; }
     </property>
     <property name="placeholderText">
      <string>Пример: 8, 11, 22</string>
+    </property>
+   </widget>
+   <widget class="QTextBrowser" name="textBrowser">
+    <property name="geometry">
+     <rect>
+      <x>960</x>
+      <y>60</y>
+      <width>281</width>
+      <height>461</height>
+     </rect>
+    </property>
+    <property name="html">
+     <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Что нужно знать:&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;1) Если отпуск \ больничный \ командировки пересекаются,&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;то программа рушится.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;2) Можно обновлять темы пользователей, изменив номера тем и нажав кнопку &amp;quot;Добавить&amp;quot;.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3) Если не заполнить % времени, то везде будут нули и можно заполнить его в ручную. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;В процессе разработки:&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;1) Расположение отпуска \ больничного \ командировки по центру.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;2) Сохранение файла сразу в нужную папку. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
   </widget>

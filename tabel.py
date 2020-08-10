@@ -5,75 +5,83 @@ from openpyxl.styles.borders import Border, Side
 from openpyxl.styles import Font
 
 
-def count_hour(mon,year, rest= [], holiday= []):
-    day = 1
+def count_hour(mon,year, rest, holiday, ill, komandirovka, short_days_list):
     count_time = 0
-    a = workday(day, mon, year, holiday, rest)
+    a = workday(1, mon, year, holiday, rest, ill, komandirovka)
     while True:
         try:
-            if next(a):
+            nextworkday = next(a)
+            if nextworkday[0]:
                 count_time += 8
-            day += 1
+                if nextworkday[1] in short_days_list:
+                    count_time -= 1
         except:
             break
     return count_time
 
 
-def workday(d, m, y, holiday= [], rest= []):
+def workday(d, m, y, holiday, rest, ill, komandirovka):
 
     while True:
         try:
-            if d in holiday or d in [ i for i in range(rest[0], rest[1] + 1)]:
-                yield False
+            if d in holiday or d in [ i for i in range(rest[0], rest[1] + 1)] or d in komandirovka \
+                    or d in [ i for i in range(ill[0], ill[1] + 1)]:
+                yield [False, d]
             else:
-                yield True if datetime.datetime(y, m, d).isoweekday() < 6 else False
+                yield [True if datetime.datetime(y, m, d).isoweekday() < 6 else False, d]
         except:
             break
         d += 1
 
 
-def fill_tabel(all_time, workdaygen):
+def fill_tabel(all_time, workdaygen, short_days_list):
     all_stroki = []
     for ind, val in enumerate(all_time):
         all_time[ind] = int(val)
     while True:
         try:
             curent_day = []
-            if next(workdaygen):
+            nextworkday = next(workdaygen)
+            if nextworkday[0]:
+                if nextworkday[1] in short_days_list:
+                    hourmax = 7
+                else:
+                    hourmax = 8
                 for ind, top in enumerate(all_time):
                     if top > 0:
                         if ind == len(all_time) - 1:
-                            hour = 8 - sum(curent_day)
+                            hour = hourmax - sum(curent_day)
                             curent_day.append(hour)
                             all_time[ind] -= hour
-                        elif sum(curent_day) < 8:
-                            if sum(all_time[ind+1:]) > 8 or (sum(curent_day) + sum(all_time[ind+1:]) > 8):
-                                if top > 8:
-                                    hour =r(1, 8 - sum(curent_day))
-                                elif top > 8 - sum(curent_day):
-                                    hour = 8 - sum(curent_day)
+                        elif sum(curent_day) < hourmax:
+                            if sum(all_time[ind+1:]) > hourmax or (sum(curent_day) + sum(all_time[ind+1:]) > hourmax):
+                                if top > hourmax:
+                                    hour =r(1, hourmax - sum(curent_day))
+                                elif top > hourmax - sum(curent_day):
+                                    hour = hourmax - sum(curent_day)
                                 else:
                                     hour = top
                                 all_time[ind] -= hour
                                 curent_day.append(hour)
-                            elif sum(all_time[ind+1:]) < 8:
-                                hour = 8 - sum(curent_day) - sum(all_time[ind+1:])
+                            elif sum(all_time[ind+1:]) < hourmax:
+                                hour = hourmax - sum(curent_day) - sum(all_time[ind+1:])
                                 all_time[ind] -= hour
                                 curent_day.append(hour)
                         else:
                             curent_day.append(0)
                     else:
                         curent_day.append(0)
+                while len(curent_day) != len(all_time):
+                    curent_day.append(0)
                 all_stroki.append(curent_day)
             else:
                 all_stroki.append([' - ' for _ in range(len(all_time))])
         except:
-            # print('exception')
             break
     return all_stroki
 
 
-def make_tabel_func(user, month, year, topic, topic_val, holiday, rest):
+def make_tabel_func(user, month, year, topic, topic_val, holiday, rest, ill, komandirovka, short_days_list):
 
     wb = opx.Workbook()  # Создаём рабочую книгу
     ws = wb.active  # Запоминаем активный лист
@@ -129,14 +137,14 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, rest):
     ws[f'{chr(66+topcount)}3'].value = 'Сумма'
     ws['A3'].value = 'Дата'
 
-    w_day = workday(1, month, year, holiday, rest)
+    w_day = workday(1, month, year, holiday, rest, ill, komandirovka)
     all_day = []
 
     for i, k in zip(topic, topic_val):
         if i:
             all_day.append(k)
     sum_total = [0 for _ in range(len(all_day) + 1)]
-    tabel = fill_tabel(all_day, w_day)
+    tabel = fill_tabel(all_day, w_day, short_days_list)
 
     for ind, i in enumerate(tabel):
         day = [ind + 1]
@@ -154,6 +162,15 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, rest):
     if sum(rest):
         ws.merge_cells(f'B{rest[0] + 4}:{chr(66 + topcount)}{rest[1] + 4}')
         ws[f'B{rest[0] + 4}'].value = 'ОТПУСК'
+
+    if sum(ill):
+        ws.merge_cells(f'B{ill[0] + 4}:{chr(66 + topcount)}{ill[1] + 4}')
+        ws[f'B{ill[0] + 4}'].value = 'БОЛЬНИЧНЫЙ'
+
+    if komandirovka:
+        for k in komandirovka:
+            ws.merge_cells(f'B{k[0] + 4}:{chr(66 + topcount)}{k[1] + 4}')
+            ws[f'B{k[0] + 4}'].value = 'КОМАНДИРОВКА'
 
     for row in ws:  # Проходим по всем строкам на листе
         for cell in row:  # Проходим по всем ячейкам в строке
@@ -178,7 +195,6 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, rest):
     ws['A41'].font = ft
     ws['A41'].alignment = opx.styles.Alignment(horizontal='center')
 
-
     wb.save(f'Табель_{user}_{month_list[month]}.{year}.xlsx')  # Сохраняем книгу
 
 
@@ -186,7 +202,8 @@ if __name__ == '__main__':
     # make_tabel_func('Ivan')
     # print(count_hour(1,2020))
     sum_ = [0, 0, 0, 0, 0]
-    for i in fill_tabel(1, 2020, ['q','w','e', 'a'], [50, 50, 34, ]):
+    w_day = workday(1, 8, 2020, holiday=[], rest=[0, 0], ill=[0, 0], komandirovka=[])
+    for i in fill_tabel([34, 54, 67], w_day, [4,5]):
         try:
             for ind, k in enumerate(i):
                 sum_[ind] += k
