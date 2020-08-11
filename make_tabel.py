@@ -3,6 +3,7 @@ import tabel
 import PyQt5
 import pickle
 import time
+import sys
 
 # Объявление переменных
 Form, _ = uic.loadUiType("tabel.ui")
@@ -11,9 +12,11 @@ topic_val = [0 for _ in range(5)]
 rest = [0, 0]
 holiday_list = []
 komandirovka = []
+komandirovka_days = []
 ill = [0, 0]
 users_list = {}
 short_days_list = []
+rest_word = {0: 'Отпуск', 1: 'Командировка', 2: 'Больничный'}
 
 
 class Ui(QtWidgets.QMainWindow, Form):
@@ -30,7 +33,10 @@ class Ui(QtWidgets.QMainWindow, Form):
         self.komand_add.clicked.connect(self.add_komandiroka)
         self.komand_remove.clicked.connect(self.remove_komandirovka)
         self.year.setText(str(time.localtime()[0]))
-        self.month.setCurrentIndex(time.localtime()[1] - 1)
+        if time.localtime()[2] > 9:
+            self.month.setCurrentIndex(time.localtime()[1] - 1)
+        else:
+            self.month.setCurrentIndex(time.localtime()[1] - 2)
 
     # Обновление всех значений и перерасчёт дней
     def update_it(self):
@@ -46,32 +52,12 @@ class Ui(QtWidgets.QMainWindow, Form):
         topic_val[3] = self.top_4_val.toPlainText()
         topic_val[4] = self.top_5_val.toPlainText()
 
-        if self.restcheckBox.isChecked():
-            try:
-                rest[0] = int(self.rest_start.text())
-                rest[1] = int(self.rest_end.text())
-            except:
-                pass
-        else:
-            rest[0] = 0
-            rest[1] = 0
-
-        if self.boln_checkBox.isChecked():
-            try:
-                ill[0] = int(self.boln_start.text())
-                ill[1] = int(self.boln_end.text())
-            except:
-                pass
-        else:
-            ill[0] = 0
-            ill[1] = 0
-
         short_days_list = self.unworkdaysinput(self.short_days.toPlainText())
         user = self.Name.toPlainText()
         year = int(self.year.toPlainText())
         month = self.month.currentIndex() + 1
         sum_top = 0
-        sum_month = tabel.count_hour(month, year, rest, holiday_list, ill, komandirovka, short_days_list)
+        sum_month = tabel.count_hour(month, year, holiday_list, komandirovka, short_days_list)
         sum_round = 0
         for i in range(5):
             if topic_val[i].isdigit():
@@ -94,7 +80,7 @@ class Ui(QtWidgets.QMainWindow, Form):
     def try_it(self):
         self.update_it()
         self.save_users()
-        tabel.make_tabel_func(user, month, year, topic, topic_val, holiday_list, rest, ill, komandirovka, short_days_list)
+        tabel.make_tabel_func(user, month, year, topic, topic_val, holiday_list, komandirovka, short_days_list)
         sys.exit()
 
     #  Выбор пользователя в таблице
@@ -147,23 +133,40 @@ class Ui(QtWidgets.QMainWindow, Form):
         except:
             pass
 
-    # Добавление строки командировки
+    # Добавление строки отпуска, командировки или больничного
     def add_komandiroka(self):
+        self.update_it()
+        komandirovka_days = []
+        for day in komandirovka:
+            komandirovka_days += [i for i in range(day[1], day[2] + 1)]
+        max_days = len([i for i in tabel.workday(1, month, year, [], [])]) + 1
         if self.komand_start.text().isdigit() and self.komand_end.text().isdigit():
-            k = tuple([int(self.komand_start.text()), int(self.komand_end.text())])
-            if k not in komandirovka:
-                komandirovka.append(k)
-                self.komand_list.addItem(f'С {self.komand_start.text()} по {self.komand_end.text()} число')
-        print(komandirovka)
+            if max_days > int(self.komand_end.text()) > int(self.komand_start.text()):
+                local_days = [i for i in range(int(self.komand_start.text()), int(self.komand_end.text()) + 1)]
+                days_in_komandirovka = False
+                for i in local_days:
+                    if i in komandirovka_days:
+                        days_in_komandirovka = True
+                if not days_in_komandirovka:
+                    k = tuple([self.komand_comboBox.currentIndex(), int(self.komand_start.text()),
+                               int(self.komand_end.text())])
+                    komandirovka.append(k)
+                    self.komand_list.addItem(f'{rest_word[k[0]]} с {k[1]} по {k[2]} число')
+                    komandirovka_days += local_days
+        self.komand_start.setText('')
+        self.komand_end.setText('')
+        self.update_it()
 
-    # Удаление строки командировки
+    # Удаление строки отпуска, командировки или больничного
     def remove_komandirovka(self):
-        try:
-            komandirovka.pop(self.komand_list.currentRow())
-            self.komand_list.takeItem(self.komand_list.currentRow())
-        except:
-            pass
-        print(komandirovka)
+        if self.komand_list.currentRow() != -1:
+            try:
+                komandirovka.pop(self.komand_list.currentRow())
+                self.komand_list.takeItem(self.komand_list.currentRow())
+                self.update_it()
+            except:
+                pass
+            self.update_it()
 
     # Распознавание текста в сокращенных и нерабочих днях
     def unworkdaysinput(self, inp):
@@ -185,9 +188,9 @@ class Ui(QtWidgets.QMainWindow, Form):
                 integ.append(int(s_int))
         return integ
 
+
 if __name__ == "__main__":
 
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     w = Ui()
     w.show()  # show window
