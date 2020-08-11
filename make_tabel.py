@@ -12,7 +12,6 @@ topic_val = [0 for _ in range(5)]
 rest = [0, 0]
 holiday_list = []
 komandirovka = []
-komandirovka_days = []
 ill = [0, 0]
 users_list = {}
 short_days_list = []
