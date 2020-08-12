@@ -4,7 +4,8 @@ import PyQt5
 import pickle
 import time
 import sys
-
+import os
+import subprocess
 # Объявление переменных
 Form, _ = uic.loadUiType("tabel.ui")
 topic = [0 for _ in range(5)]
@@ -16,13 +17,14 @@ ill = [0, 0]
 users_list = {}
 short_days_list = []
 rest_word = {0: 'Отпуск', 1: 'Командировка', 2: 'Больничный'}
-
+path_program = ''
+path = ''
 
 class Ui(QtWidgets.QMainWindow, Form):
     def __init__(self):
         super(Ui, self).__init__()
         self.setupUi(self)
-        # self.add_user.clicked.connect(self.add_user_func)
+        global path, path_program
         self.update_bot.clicked.connect(self.update_it)
         self.make_tabel.clicked.connect(self.try_it)
         self.users.itemSelectionChanged.connect(self.selectionChanged)
@@ -36,6 +38,9 @@ class Ui(QtWidgets.QMainWindow, Form):
             self.month.setCurrentIndex(time.localtime()[1] - 1)
         else:
             self.month.setCurrentIndex(time.localtime()[1] - 2)
+        path_program = os.getcwd()
+        os.chdir('..')
+        path = os.getcwd()
 
     # Обновление всех значений и перерасчёт дней
     def update_it(self):
@@ -52,35 +57,41 @@ class Ui(QtWidgets.QMainWindow, Form):
         topic_val[4] = self.top_5_val.toPlainText()
 
         short_days_list = self.unworkdaysinput(self.short_days.toPlainText())
+        holiday_list = self.unworkdaysinput(self.holiday.toPlainText())
         user = self.Name.toPlainText()
         year = int(self.year.toPlainText())
         month = self.month.currentIndex() + 1
         sum_top = 0
-        sum_month = tabel.count_hour(month, year, holiday_list, komandirovka, short_days_list)
         sum_round = 0
+        sum_month = tabel.count_hour(month, year, holiday_list, komandirovka, short_days_list)
         for i in range(5):
             if topic_val[i].isdigit():
                 if int(topic_val[i]) + sum_round != 100:
                     sum_round += int(topic_val[i])
                     topic_val[i] = int(sum_month / 100 * int(topic_val[i]))
                     sum_top += topic_val[i]
-
                 else:
                     topic_val[i] = sum_month - sum_top
                     sum_top += topic_val[i]
                     sum_round = 100
             else:
                 topic_val[i] = 0
-        holiday_list = self.unworkdaysinput(self.holiday.toPlainText())
         self.sum_time.setText(f'{sum_round}')
         self.must_time.setText(f'Всего {sum_month} рабочих часов')
+        self.waring_mes.setText('')
 
     # Создание табеля, сохранение пользователей в файл
     def try_it(self):
         self.update_it()
-        self.save_users()
-        tabel.make_tabel_func(user, month, year, topic, topic_val, holiday_list, komandirovka, short_days_list)
-        sys.exit()
+        os.chdir(path_program)
+        try:
+            tabel_name = tabel.make_tabel_func(user, month, year, topic, topic_val, holiday_list,
+                                               komandirovka, short_days_list, path)
+            self.waring_mes.setText('Табель успешно создан')
+            if self.open_check.isChecked():
+                os.startfile(tabel_name[0])
+        except:
+            self.waring_mes.setText('Закройте файл Excel')
 
     #  Выбор пользователя в таблице
     def selectionChanged(self):
@@ -99,20 +110,27 @@ class Ui(QtWidgets.QMainWindow, Form):
         global users_list
         try:
             with open('users.tabel', 'rb') as f:
-                users_list = pickle.load(f)
-            for i in users_list:
-                users_list[i].insert(0, PyQt5.QtWidgets.QListWidgetItem())
-                users_list[i][0].setText(i)
-                self.users.addItem(users_list[i][0])
+                users_list_load = pickle.load(f)
+            for i in users_list_load:
+                if i not in users_list:
+                    users_list_load[i].insert(0, PyQt5.QtWidgets.QListWidgetItem())
+                    users_list_load[i][0].setText(i)
+                    self.users.addItem(users_list_load[i][0])
+                    users_list[i] = users_list_load[i]
         except:
             pass
 
     # Сохранение пользователей в файл
-    def save_users(self):
-        for i in users_list:
-            users_list[i].pop(0)
+    def save_users(self, path):
+        global users_list
+        os.chdir(path)
+        list_to_save = users_list.copy()
+        for i in list_to_save:
+            list_to_save[i].pop(0)
+            self.users.takeItem(0)
         with open('users.tabel', 'wb') as f:
             pickle.dump(users_list, f)
+        users_list = {}
 
     # Добавление пользователя
     def add_user_click(self):
@@ -124,6 +142,8 @@ class Ui(QtWidgets.QMainWindow, Form):
         users_list[user][0].setText(f'{user}')
         if not userinlist:
             self.users.addItem(users_list[user][0])
+        self.save_users(path_program)
+        self.read_users()
 
     # Удаление пользователя
     def remove_user_click(self):
@@ -136,11 +156,12 @@ class Ui(QtWidgets.QMainWindow, Form):
     def add_komandiroka(self):
         self.update_it()
         komandirovka_days = []
+        max_days = len([i for i in tabel.workday(1, month, year, [], [])]) + 1
         for day in komandirovka:
             komandirovka_days += [i for i in range(day[1], day[2] + 1)]
-        max_days = len([i for i in tabel.workday(1, month, year, [], [])]) + 1
+
         if self.komand_start.text().isdigit() and self.komand_end.text().isdigit():
-            if max_days > int(self.komand_end.text()) > int(self.komand_start.text()):
+            if max_days > int(self.komand_end.text()) >= int(self.komand_start.text()):
                 local_days = [i for i in range(int(self.komand_start.text()), int(self.komand_end.text()) + 1)]
                 days_in_komandirovka = False
                 for i in local_days:

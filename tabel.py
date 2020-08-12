@@ -4,7 +4,7 @@ import datetime
 from openpyxl.styles.borders import Border, Side
 from openpyxl.styles import Font
 import os
-
+from random import shuffle as sh
 
 def count_hour(mon, year, holiday, komandirovka, short_days_list):
     count_time = 0
@@ -39,14 +39,20 @@ def workday(d, m, y, holiday, komandirovka):
 
 def fill_tabel(all_time, workdaygen, short_days_list):
     all_stroki = []
+    short_days = []
+    work_list = []
     for ind, val in enumerate(all_time):
         all_time[ind] = int(val)
+    revers_check = True
     while True:
         try:
             curent_day = []
-            nextworkday = next(workdaygen)
-            if nextworkday[0]:
-                if nextworkday[1] in short_days_list:
+            work_list.append(next(workdaygen))
+            if work_list[-1][0]:
+                revers_check = not revers_check
+                if revers_check:
+                    all_time.reverse()
+                if work_list[-1][1] in short_days_list:
                     hourmax = 7
                 else:
                     hourmax = 8
@@ -76,15 +82,27 @@ def fill_tabel(all_time, workdaygen, short_days_list):
                         curent_day.append(0)
                 while len(curent_day) != len(all_time):
                     curent_day.append(0)
-                all_stroki.append(curent_day)
-            else:
-                all_stroki.append([' - ' for _ in range(len(all_time))])
+                if revers_check:
+                    curent_day.reverse()
+                    all_time.reverse()
+                if hourmax == 8:
+                    all_stroki.append(curent_day)
+                else:
+                    short_days.append(curent_day)
+            # else:
+            #     all_stroki.append([' - ' for _ in range(len(all_time))])
         except:
             break
+    sh(all_stroki)
+    for i in work_list:
+        if i[1] in short_days_list and short_days:
+            all_stroki.insert(i[1] - 1, short_days.pop(0))
+        elif not i[0]:
+            all_stroki.insert(i[1] - 1, [' - ' for _ in range(len(all_time))])
     return all_stroki
 
 
-def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, short_days_list):
+def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, short_days_list, path):
 
     wb = opx.Workbook()  # Создаём рабочую книгу
     ws = wb.active  # Запоминаем активный лист
@@ -147,6 +165,7 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, 
         if i:
             all_day.append(k)
     sum_total = [0 for _ in range(len(all_day) + 1)]
+
     tabel = fill_tabel(all_day, w_day, short_days_list)
 
     for ind, i in enumerate(tabel):
@@ -201,4 +220,6 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, 
     path += f'\\{monprint}.{month_list[month]}'
     os.chdir(path)
     wb.save(f'Табель_{user}_{month_list[month]}.{year}.xlsx')  # Сохраняем книгу
+    path += f'.\\Табель_{user}_{month_list[month]}.{year}.xlsx'
+    return [path, f'Табель_{user}_{month_list[month]}.{year}.xlsx']
 
