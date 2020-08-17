@@ -20,6 +20,7 @@ rest_word = {0: 'Отпуск', 1: 'Командировка', 2: 'Больни�
 path_program = ''
 path = ''
 
+
 class Ui(QtWidgets.QMainWindow, Form):
     def __init__(self):
         super(Ui, self).__init__()
@@ -149,7 +150,7 @@ class Ui(QtWidgets.QMainWindow, Form):
     def remove_user_click(self):
         try:
             users_list.pop(self.users.takeItem(self.users.currentRow()).text())
-        except:
+        finally:
             pass
 
     # Добавление строки отпуска, командировки или больничного
