@@ -6,6 +6,7 @@ from openpyxl.styles import Font
 import os
 from random import shuffle as sh
 
+
 def count_hour(mon, year, holiday, komandirovka, short_days_list):
     count_time = 0
     a = workday(1, mon, year, holiday, komandirovka)
@@ -102,7 +103,7 @@ def fill_tabel(all_time, workdaygen, short_days_list):
     return all_stroki
 
 
-def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, short_days_list, path):
+def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, short_days_list, path, settings_list):
 
     wb = opx.Workbook()  # Создаём рабочую книгу
     ws = wb.active  # Запоминаем активный лист
@@ -203,8 +204,19 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, 
             pass
             ws.column_dimensions[f'{chr(col)}'].width = 20 - 2 * topcount
 
+    sum_width = 0
+    for col in range(65, 68 + topcount):
+        sum_width += ws.column_dimensions[f'{chr(col)}'].width
+
     ws.merge_cells(f'A41:{chr(66 + topcount)}41')
-    ws['A41'].value = 'Начальник ОВНТ' + 20 * ' ' + 10 * ' ' * topcount + 'Керестень А.А.'
+
+    if settings_list['current_nach']:
+        cur_nach = 'nachalnik'
+    else:
+        cur_nach = 'io'
+    ws['A41'].value = f'{settings_list[cur_nach][0]}' + \
+                      (int(sum_width) - len(settings_list[cur_nach][0]) - len(settings_list[cur_nach][1])) * ' ' + \
+                      f'{settings_list[cur_nach][1]}'
     ws['A41'].font = ft
     ws['A41'].alignment = opx.styles.Alignment(horizontal='center')
 
@@ -222,4 +234,3 @@ def make_tabel_func(user, month, year, topic, topic_val, holiday, komandirovka, 
     wb.save(f'Табель_{user}_{month_list[month]}.{year}.xlsx')  # Сохраняем книгу
     path += f'.\\Табель_{user}_{month_list[month]}.{year}.xlsx'
     return [path, f'Табель_{user}_{month_list[month]}.{year}.xlsx']
-

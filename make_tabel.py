@@ -5,9 +5,9 @@ import pickle
 import time
 import sys
 import os
-import subprocess
+
 # Объявление переменных
-Form, _ = uic.loadUiType("tabel.ui")
+
 topic = [0 for _ in range(5)]
 topic_val = [0 for _ in range(5)]
 rest = [0, 0]
@@ -17,17 +17,20 @@ ill = [0, 0]
 users_list = {}
 short_days_list = []
 rest_word = {0: 'Отпуск', 1: 'Командировка', 2: 'Больничный'}
-path_program = ''
-path = ''
 
 
-class Ui(QtWidgets.QMainWindow, Form):
+
+settings_list = {'nachalnik': ['Начальник ОВНТ', "Керестень А.А."], 'io': ['И.О. начальника ОВНТ', 'Гусева Е.Н.'],
+                 'current_nach': 1}
+
+
+class Ui(QtWidgets.QMainWindow, uic.loadUiType("tabel.ui")[0]):
     def __init__(self):
         super(Ui, self).__init__()
         self.setupUi(self)
-        global path, path_program
         self.update_bot.clicked.connect(self.update_it)
         self.make_tabel.clicked.connect(self.try_it)
+        self.setting_but.clicked.connect(self.settings_buttum)
         self.users.itemSelectionChanged.connect(self.selectionChanged)
         self.adduser.clicked.connect(self.add_user_click)
         self.read_users()
@@ -39,9 +42,10 @@ class Ui(QtWidgets.QMainWindow, Form):
             self.month.setCurrentIndex(time.localtime()[1] - 1)
         else:
             self.month.setCurrentIndex(time.localtime()[1] - 2)
-        path_program = os.getcwd()
+        self.path_program = os.getcwd()
         os.chdir('..')
-        path = os.getcwd()
+        self.path = os.getcwd()
+
 
     # Обновление всех значений и перерасчёт дней
     def update_it(self):
@@ -84,10 +88,10 @@ class Ui(QtWidgets.QMainWindow, Form):
     # Создание табеля, сохранение пользователей в файл
     def try_it(self):
         self.update_it()
-        os.chdir(path_program)
+        os.chdir(self.path_program)
         try:
             tabel_name = tabel.make_tabel_func(user, month, year, topic, topic_val, holiday_list,
-                                               komandirovka, short_days_list, path)
+                                               komandirovka, short_days_list, self.path, settings_list)
             self.waring_mes.setText('Табель успешно создан')
             if self.open_check.isChecked():
                 os.startfile(tabel_name[0])
@@ -97,18 +101,20 @@ class Ui(QtWidgets.QMainWindow, Form):
     #  Выбор пользователя в таблице
     def selectionChanged(self):
         try:
+            print(self.users.selectedItems()[0].text())
             self.top_1.setText(users_list[self.users.selectedItems()[0].text()][1])
             self.top_2.setText(users_list[self.users.selectedItems()[0].text()][2])
             self.top_3.setText(users_list[self.users.selectedItems()[0].text()][3])
             self.top_4.setText(users_list[self.users.selectedItems()[0].text()][4])
             self.top_5.setText(users_list[self.users.selectedItems()[0].text()][5])
             self.Name.setText(self.users.selectedItems()[0].text())
+
         except:
             pass
 
     # Чтение пользователей из файла
     def read_users(self):
-        global users_list
+        global users_list, settings_list
         try:
             with open('users.tabel', 'rb') as f:
                 users_list_load = pickle.load(f)
@@ -119,6 +125,12 @@ class Ui(QtWidgets.QMainWindow, Form):
                     self.users.addItem(users_list_load[i][0])
                     users_list[i] = users_list_load[i]
         except:
+            pass
+        try:
+            with open('settings.tabel', 'rb') as f:
+                settings_list = pickle.load(f)
+        except:
+            print(settings_list)
             pass
 
     # Сохранение пользователей в файл
@@ -143,7 +155,7 @@ class Ui(QtWidgets.QMainWindow, Form):
         users_list[user][0].setText(f'{user}')
         if not userinlist:
             self.users.addItem(users_list[user][0])
-        self.save_users(path_program)
+        self.save_users(self.path_program)
         self.read_users()
 
     # Удаление пользователя
@@ -209,10 +221,55 @@ class Ui(QtWidgets.QMainWindow, Form):
                 integ.append(int(s_int))
         return integ
 
+    def settings_buttum(self):
+        self.set_wind = Settings(self)
+        self.setEnabled(False)
+        self.set_wind.show()
+
+
+class Settings(QtWidgets.QMainWindow, uic.loadUiType("setings_tabel.ui")[0]):
+    def __init__(self, main_wind):
+        super(Settings, self).__init__()
+        self.setupUi(self)
+        self.main_window = main_wind
+        self.close_but.clicked.connect(self.close)
+        # self.button_group.buttonClicked.connect(self._on_radio_button_clicked)
+        self.nach_ovnt.clicked.connect(self.choose_nachalnik)
+        self.io_nach_ovnt.clicked.connect(self.choose_nachalnik)
+        self.read_settings()
+
+    def choose_nachalnik(self, who):
+        if self.nach_ovnt.isChecked():
+            settings_list['current_nach'] = 1
+            settings_list['nachalnik'][1] = self.nach_ovnt_name.text()
+        elif self.io_nach_ovnt.isChecked():
+            settings_list['current_nach'] = 0
+            settings_list['io'][1] = self.io_nach_ovnt_name.text()
+
+    def read_settings(self):
+        if settings_list['current_nach']:
+            self.nach_ovnt.setChecked(True)
+        else:
+            self.io_nach_ovnt.setChecked(True)
+        self.nach_ovnt_name.setText(settings_list['nachalnik'][1])
+        self.io_nach_ovnt_name.setText(settings_list['io'][1])
+
+    def save_settings(self):
+        os.chdir(self.main_window.path_program)
+        with open('settings.tabel', 'wb') as f:
+            pickle.dump(settings_list, f)
+
+    def closeEvent(self, event):
+        settings_list['nachalnik'][1] = self.nach_ovnt_name.text()
+        settings_list['io'][1] = self.io_nach_ovnt_name.text()
+        self.save_settings()
+        self.main_window.setEnabled(True)
+        event.accept()
+
 
 if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     w = Ui()
-    w.show()  # show window
+    w.show()
     sys.exit(app.exec_())
